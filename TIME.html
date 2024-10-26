@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>24-Hour Ruler Timeline</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            background-color: #ffffff; /* Light background */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            position: relative;
+            overflow: hidden; /* Prevent scrollbars caused by fixed elements */
+        }
+
+        /* Pulsating Time Indicator */
+        .time-indicator {
+            position: fixed; /* Fixed position to span the entire viewport vertically */
+            top: 0;
+            bottom: 0;
+            left: 50%; /* Center position */
+            width: 1px; /* Adjusted width for better visibility */
+            background-color: #FF0000; /* Initial color: Bright red */
+            animation: pulse 1s infinite; /* Pulsing every second */
+            z-index: 4; /* Highest z-index to appear above other elements */
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); /* Glow effect */
+            pointer-events: none; /* Allows clicks to pass through */
+            transform: translateX(-50%); /* Precisely center the line */
+        }
+
+        /* Pulse Animation for Time Indicator */
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Triangular Pulsating Gradient to the Left of the Page (Red) */
+        .gradient-triangle-left {
+            position: fixed; /* Fixed position to span the entire viewport vertically */
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 0; /* Initial width set to 0 */
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 0, 0, 0), rgba(255, 0, 0, 0.8));
+            transform-origin: left center;
+            opacity: 0.5;
+            animation: pulse-gradient-left 2s infinite; /* Pulsing every 2 seconds */
+            z-index: 2; /* Below the time indicator */
+            pointer-events: none; /* Allows clicks to pass through */
+            clip-path: polygon(0% 0%, 100% 50%, 0% 100%); /* Creates a left-pointing triangle */
+        }
+
+        /* Pulse Animation for Left Gradient Triangle */
+        @keyframes pulse-gradient-left {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Triangular Pulsating Gradient to the Right of the Page (Blue) */
+        .gradient-triangle-right {
+            position: fixed; /* Fixed position to span the entire viewport vertically */
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 0; /* Initial width set to 0 */
+            height: 100%;
+            background: linear-gradient(to left, rgba(0, 0, 255, 0), rgba(0, 0, 255, 0.8));
+            transform-origin: right center;
+            opacity: 0.5;
+            animation: pulse-gradient-right 2s infinite; /* Pulsing every 2 seconds */
+            z-index: 2; /* Below the time indicator */
+            pointer-events: none; /* Allows clicks to pass through */
+            clip-path: polygon(100% 0%, 0% 50%, 100% 100%); /* Creates a right-pointing triangle */
+        }
+
+        /* Pulse Animation for Right Gradient Triangle */
+        @keyframes pulse-gradient-right {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Timeline Container */
+        .timeline-container {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            height: 150px; /* Height to accommodate tick marks */
+            border-radius: 8px;
+            padding: 10px 0; /* Vertical padding */
+        }
+
+        /* Ruler Line */
+        .ruler-line {
+            position: absolute;
+            top: 50%; /* Center vertically within the timeline container */
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #000000; /* Black ruler line */
+            transform: translateY(-50%);
+        }
+
+        /* Tick Marks */
+        .tick {
+            position: absolute;
+            top: 50%; /* Align with ruler line */
+            left: 0;
+            width: 1px;
+            background-color: transparent; /* Invisible, as tick marks are created via pseudo-elements */
+        }
+
+        /* Tick Sizes using Pseudo-elements */
+        .tick::before,
+        .tick::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 1px;
+            background-color: #000000; /* Black tick marks */
+        }
+
+        /* 7.5-Minute Tick Marks */
+        .tick.small::before {
+            height: 3px; /* Upward */
+            bottom: 100%; /* Position above the ruler line */
+        }
+
+        .tick.small::after {
+            height: 3px; /* Downward */
+            top: 100%; /* Position below the ruler line */
+        }
+
+        /* 15-Minute Tick Marks */
+        .tick.medium::before {
+            height: 6px;
+            bottom: 100%;
+        }
+
+        .tick.medium::after {
+            height: 6px;
+            top: 100%;
+        }
+
+        /* 30-Minute Tick Marks */
+        .tick.large::before {
+            height: 12px;
+            bottom: 100%;
+        }
+
+        .tick.large::after {
+            height: 12px;
+            top: 100%;
+        }
+
+        /* Hourly Tick Marks */
+        .tick.hourly::before {
+            height: 24px;
+            bottom: 100%;
+        }
+
+        .tick.hourly::after {
+            height: 24px;
+            top: 100%;
+        }
+
+        /* Time Labels */
+        .time-label {
+            position: absolute;
+            top: 98px; /* Position below the tick marks */
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #000000;
+            white-space: nowrap;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .timeline-container {
+                height: 120px;
+            }
+
+            /* Adjust Tick Sizes */
+            .tick.small::before,
+            .tick.small::after {
+                height: 2px;
+            }
+
+            .tick.medium::before,
+            .tick.medium::after {
+                height: 4px;
+            }
+
+            .tick.large::before,
+            .tick.large::after {
+                height: 8px;
+            }
+
+            .tick.hourly::before,
+            .tick.hourly::after {
+                height: 16px;
+            }
+
+            .time-label {
+                top: 78px; /* Adjusted for smaller screens */
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .timeline-container {
+                height: 90px;
+            }
+
+            /* Further Adjust Tick Sizes */
+            .tick.small::before,
+            .tick.small::after {
+                height: 1.5px;
+            }
+
+            .tick.medium::before,
+            .tick.medium::after {
+                height: 3px;
+            }
+
+            .tick.large::before,
+            .tick.large::after {
+                height: 6px;
+            }
+
+            .tick.hourly::before,
+            .tick.hourly::after {
+                height: 12px;
+            }
+
+            .time-label {
+                top: 58px; /* Adjusted for smaller screens */
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Pulsating Time Indicator spanning the entire page -->
+    <div class="time-indicator" id="timeIndicator"></div>
+
+    <!-- Triangular Pulsating Gradient to the Left of the Page (Red) -->
+    <div class="gradient-triangle-left" id="gradientTriangleLeft"></div>
+
+    <!-- Triangular Pulsating Gradient to the Right of the Page (Blue) -->
+    <div class="gradient-triangle-right" id="gradientTriangleRight"></div>
+
+    <!-- Timeline Container -->
+    <div class="timeline-container" id="timelineContainer">
+        <!-- Ruler Line -->
+        <div class="ruler-line"></div>
+
+        <!-- Tick Marks and Labels will be generated by JavaScript -->
+    </div>
+
+    <script>
+        /**
+         * Function to create tick marks and time labels on the timeline.
+         */
+        function createTickMarks() {
+            const timelineContainer = document.getElementById('timelineContainer');
+            const totalMinutes = 24 * 60; // Total minutes in a day (1440)
+            const tickInterval = 7.5; // Tick interval in minutes
+
+            for (let i = 0; i <= totalMinutes; i += tickInterval) { // Every 7.5 minutes
+                // Skip creating tick marks at 00:00 and 24:00
+                if (i !== 0 && i !== totalMinutes) {
+                    const tick = document.createElement('div');
+                    tick.classList.add('tick');
+
+                    // Determine tick size based on the increment
+                    // Use a small epsilon to handle floating point precision
+                    const epsilon = 0.001;
+
+                    if (Math.abs(i % 60) < epsilon) {
+                        tick.classList.add('hourly'); // Every hour
+                    } else if (Math.abs(i % 30) < epsilon) {
+                        tick.classList.add('large'); // Every 30 minutes
+                    } else if (Math.abs(i % 15) < epsilon) {
+                        tick.classList.add('medium'); // Every 15 minutes
+                    } else {
+                        tick.classList.add('small'); // Every 7.5 minutes
+                    }
+
+                    // Calculate position percentage
+                    const positionPercent = (i / totalMinutes) * 100;
+                    tick.style.left = `${positionPercent}%`;
+
+                    // Append tick to the timeline container
+                    timelineContainer.appendChild(tick);
+                }
+
+                // Add time labels at every hour, including 00:00 and 24:00
+                if (i % 60 === 0) {
+                    const label = document.createElement('div');
+                    label.classList.add('time-label');
+                    const hour = i / 60;
+                    // Format hour to display 24:00 instead of 00:00 for i=1440
+                    const displayHour = hour === 24 ? '24' : hour.toString().padStart(2, '0');
+                    label.innerText = `${displayHour}:00`;
+                    label.style.left = `${(i / totalMinutes) * 100}%`;
+                    label.setAttribute('aria-label', `Hour ${displayHour}:00`);
+                    timelineContainer.appendChild(label);
+                }
+            }
+        }
+
+        /**
+         * Function to update the position of the time indicator and the gradient triangles.
+         */
+        function updateTimeIndicator() {
+            const indicator = document.getElementById('timeIndicator');
+            const gradientTriangleLeft = document.getElementById('gradientTriangleLeft');
+            const gradientTriangleRight = document.getElementById('gradientTriangleRight');
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const milliseconds = now.getMilliseconds();
+
+            // Calculate total minutes elapsed in the day with fractional minutes
+            const totalMinutesElapsed = hours * 60 + minutes + seconds / 60 + milliseconds / 60000;
+
+            // Calculate the percentage of the day completed
+            const percentageOfDay = totalMinutesElapsed / (24 * 60); // 1440 minutes in a day
+
+            // Calculate the position in percentage
+            const indicatorPositionPercent = percentageOfDay * 100;
+
+            // Set the left position of the indicator
+            indicator.style.left = `${indicatorPositionPercent}%`;
+
+            // Set the width of the gradient-triangle-left to align with the indicator
+            gradientTriangleLeft.style.width = `${percentageOfDay * 100}%`;
+
+            // Set the width of the gradient-triangle-right to the remaining percentage
+            gradientTriangleRight.style.width = `${(1 - percentageOfDay) * 100}%`;
+        }
+
+        /**
+         * Function to toggle the indicator's color between red and blue every second.
+         */
+        function toggleIndicatorColor() {
+            const indicator = document.getElementById('timeIndicator');
+            // Toggle a data attribute to keep track of the current color
+            if (indicator.dataset.color === 'blue') {
+                indicator.style.backgroundColor = '#FF0000'; // Red
+                indicator.dataset.color = 'red';
+                indicator.style.boxShadow = '0 0 10px rgba(255, 0, 0, 0.8)'; // Red glow
+            } else {
+                indicator.style.backgroundColor = '#0000FF'; // Blue
+                indicator.dataset.color = 'blue';
+                indicator.style.boxShadow = '0 0 10px rgba(0, 0, 255, 0.8)'; // Blue glow
+            }
+        }
+
+        /**
+         * Initialize the timeline by creating tick marks, setting up the indicator update,
+         * and initializing the color toggle.
+         */
+        function initializeTimeline() {
+            createTickMarks();
+            updateTimeIndicator();
+
+            // Update the indicator every second for precise alignment
+            setInterval(updateTimeIndicator, 1000);
+
+            // Toggle the indicator color every second
+            setInterval(toggleIndicatorColor, 1000);
+
+            // Update tick marks and indicator on window resize for responsiveness
+            window.addEventListener('resize', () => {
+                // Remove existing tick marks and labels
+                const ticks = document.querySelectorAll('.tick');
+                const labels = document.querySelectorAll('.time-label');
+                ticks.forEach(tick => tick.remove());
+                labels.forEach(label => label.remove());
+
+                // Recreate tick marks and labels
+                createTickMarks();
+
+                // Update the indicator position
+                updateTimeIndicator();
+            });
+        }
+
+        // Initialize the timeline when the page loads
+        window.onload = initializeTimeline;
+    </script>
+
+</body>
+</html>
