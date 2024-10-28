@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>24 HOUR TIMELINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Time Indicator - Red Line */
+        .time-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 0;
+            background-color: red;
+            z-index: 4;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Timeline Container */
+        .timeline-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            padding: 20px 0;
+        }
+
+        /* Ruler Line with Spectrum Gradient Wiggle Effect */
+        .ruler-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, violet, indigo, blue, green, yellow, orange, red);
+            background-size: 400%;
+            animation: rainbowWiggle 1s ease-in-out infinite alternate;
+        }
+
+        /* Tick Marks with Spectrum Gradient Wiggle Effect */
+        .tick {
+            position: absolute;
+            width: 2px;
+            height: 0;
+            background: linear-gradient(90deg, violet, indigo, blue, green, yellow, orange, red);
+            background-size: 400%;
+            animation: rainbowWiggle 1s ease-in-out infinite alternate;
+        }
+
+        /* Tick Sizes using Pseudo-elements */
+        .tick.small::before, .tick.small::after,
+        .tick.medium::before, .tick.medium::after,
+        .tick.large::before, .tick.large::after,
+        .tick.hourly::before, .tick.hourly::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            background: inherit;
+        }
+
+        /* Tick Types */
+        .tick.small::before, .tick.small::after { height: 6px; }
+        .tick.medium::before, .tick.medium::after { height: 12px; }
+        .tick.large::before, .tick.large::after { height: 24px; }
+        .tick.hourly::before, .tick.hourly::after { height: 48px; }
+
+        /* Positioning the Top and Bottom Ticks */
+        .tick::before { bottom: 50%; }
+        .tick::after { top: 50%; }
+
+        /* Time Labels - Solid White Color and Larger Font Size */
+        .time-label {
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            white-space: nowrap;
+        }
+        .time-label-top {
+            top: 60px; /* Position of the top labels */
+        }
+        .time-label-bottom {
+            top: 210px; /* Position of the bottom labels */
+        }
+
+        /* Animation for back-and-forth effect every second */
+        @keyframes rainbowWiggle {
+            0% { background-position: 0%; }
+            100% { background-position: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="time-indicator" id="timeIndicator"></div>
+    <div class="timeline-container" id="timelineContainer">
+        <div class="ruler-line"></div>
+    </div>
+
+    <script>
+        function createTickMarks() {
+            const timelineContainer = document.getElementById('timelineContainer');
+            const totalMinutes = 24 * 60;
+            const tickInterval = 7.5;
+
+            for (let i = 0; i <= totalMinutes; i += tickInterval) {
+                if (i !== 0 && i !== totalMinutes) {
+                    const tick = document.createElement('div');
+                    tick.classList.add('tick');
+
+                    const epsilon = 0.001;
+                    if (Math.abs(i % 60) < epsilon) tick.classList.add('hourly');
+                    else if (Math.abs(i % 30) < epsilon) tick.classList.add('large');
+                    else if (Math.abs(i % 15) < epsilon) tick.classList.add('medium');
+                    else tick.classList.add('small');
+
+                    const positionPercent = (i / totalMinutes) * 100;
+                    tick.style.left = `${positionPercent}%`;
+                    tick.style.top = '50%';
+                    tick.style.transform = 'translateY(-50%)';
+
+                    timelineContainer.appendChild(tick);
+                }
+
+                if (i % 60 === 0) {
+                    const label = document.createElement('div');
+                    const hour = i / 60;
+                    const displayHour = hour === 24 ? '00' : hour.toString().padStart(2, '0');
+
+                    label.classList.add('time-label');
+                    if (hour % 2 === 0) {
+                        label.classList.add('time-label-bottom');
+                    } else {
+                        label.classList.add('time-label-top');
+                    }
+
+                    label.innerText = `${displayHour}:00`;
+                    const positionPercent = (i / totalMinutes) * 100;
+                    label.style.left = `${positionPercent}%`;
+                    timelineContainer.appendChild(label);
+                }
+            }
+        }
+
+        function updateTimeIndicator() {
+            const indicator = document.getElementById('timeIndicator');
+
+            const now = new Date();
+            const totalMillisecondsInDay = 24 * 60 * 60 * 1000;
+            const elapsedMilliseconds = now.getHours() * 60 * 60 * 1000 +
+                                         now.getMinutes() * 60 * 1000 +
+                                         now.getSeconds() * 1000 +
+                                         now.getMilliseconds();
+
+            const percentageOfDay = elapsedMilliseconds / totalMillisecondsInDay;
+            const indicatorPositionPercent = percentageOfDay * 100;
+
+            // Update horizontal position of the time indicator
+            indicator.style.left = `${indicatorPositionPercent}%`;
+
+            // Calculate expansion/contraction over a full 2-minute cycle (120 seconds)
+            const secondsInTwoMinuteCycle = (now.getMinutes() % 2) * 60 + now.getSeconds() + now.getMilliseconds() / 1000;
+            const expansionHeight = secondsInTwoMinuteCycle <= 60 
+                ? (secondsInTwoMinuteCycle / 60) * 100
+                : ((120 - secondsInTwoMinuteCycle) / 60) * 100;
+
+            indicator.style.height = `${expansionHeight}%`;
+        }
+
+        window.onload = () => {
+            createTickMarks();
+            setInterval(updateTimeIndicator, 100);
+        };
+    </script>
+
+</body>
+</html>
